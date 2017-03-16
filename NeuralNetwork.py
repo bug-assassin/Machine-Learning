@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 class NeuralNetwork(object):
-    def __init__(self, sizes, activationFunction):
+    def __init__(self, sizes, activationFunction, costFunction):
         # sizes = [input_size, middle_size, output_size]
 
         self.num_layers = len(sizes)
@@ -10,7 +10,7 @@ class NeuralNetwork(object):
         self.n = sizes[0]
         self.sizes = sizes
         self.activationFunction = activationFunction
-        #self.costFunction = costFunction
+        self.costFunction = costFunction
 
         self.weights = []
         for i in range(1, self.num_layers):
@@ -48,7 +48,7 @@ class NeuralNetwork(object):
         deltas = np.empty(self.num_layers - 1, dtype=object)
 
         # last layer delta
-        deltas[-1] = np.multiply(-(y - yHat), self.activationFunction(zs[-1], derivative=True))
+        deltas[-1] = np.multiply(self.costFunction(y, yHat, derivative=True), self.activationFunction(zs[-1], derivative=True))
 
         # all layers delta except last one
         for layer in range(self.num_hidden_layers - 1, -1, -1):
@@ -62,9 +62,9 @@ class NeuralNetwork(object):
 
 
 def squaredError(y, yHat, derivative=False):
-    #if derivative:
-    #    return -(y - yHat)
-    #else:
+    if derivative:
+        return -(y - yHat)
+    else:
         m = y.shape[0]
         J = 0.5 * sum((y - yHat) ** 2) / m
         return J
@@ -86,26 +86,17 @@ def tanh(z, derivative=False):
     return y
 
 class Trainer(object):
-    def __init__(self):
-        np.random.seed(1)  # to be reproductible
-        self.nn = NeuralNetwork([1, 30, 30, 20, 1], tanh)
+    def __init__(self, neuralNetwork):
+        np.random.seed(1)  # to be reproducible
+        self.nn = neuralNetwork
 
-        sineRange = 2*np.pi
-        sineMin = 0
-        X, y = SampleDataset().getSinDataset(min=sineMin, sineRange=sineRange)
-        self.BatchGradientDescent(X, y, batch_size=5, max_epochs=10000, stop_when_error_less_than=0.00001)
-
-        plt.scatter((X * sineRange + sineMin) / 0.0174533, y)
-
-        plt.scatter((X * sineRange + sineMin) / 0.0174533, self.nn.feedforward(X)[-1][-1], c='red')
-
-
-    def SplitDataset(self):
+    def SplitDataset(self, percent_training=60, percent_cross_validation=20, percent_test_set=20):
         """
         Splits the dataset into 60% training, 20% cross-validation, 20% test set
         :return:
         """
         #TODO
+
 
 
     def BatchGradientDescent(self, X, y, batch_size, max_epochs, stop_when_error_less_than = 0.001):
@@ -117,7 +108,7 @@ class Trainer(object):
         for i in range(1, max_epochs + 1):
             index = np.random.randint(0, len(X))
             self.nn.backprop(X[index], y[index], learningRate=0.03)
-            error = squaredError(y[index], self.nn.feedforward(X[index])[-1][-1])
+            error = self.nn.costFunction(y[index], self.nn.feedforward(X[index])[-1][-1])
             print("{} : Error {}".format(i, error))
             plotData.append(error)
             if(error < stop_when_error_less_than):
@@ -131,17 +122,3 @@ class Trainer(object):
     def normalize(self, a):
         maxValues = np.amax(a, axis=0)
         return a / maxValues
-
-class SampleDataset(object):
-    def getSinDataset(self, min = 0, sineRange = np.pi):
-        X = np.random.rand(1000, 1)
-        y = np.sin(X * sineRange + min)
-        return X, y
-
-    def getXORDataset(self):
-        X = np.array(([1, 1], [0, 1], [1, 0], [0, 0]), dtype=float)
-        y = np.array(([0], [1], [1], [0]), dtype=float)
-
-        return X, y
-
-trainer = Trainer()
