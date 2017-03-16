@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 class NeuralNetwork(object):
-    def __init__(self, sizes, activationFunction, costFunction):
+    def __init__(self, sizes, activationFunction):
         # sizes = [input_size, middle_size, output_size]
 
         self.num_layers = len(sizes)
@@ -10,7 +10,7 @@ class NeuralNetwork(object):
         self.n = sizes[0]
         self.sizes = sizes
         self.activationFunction = activationFunction
-        self.costFunction = costFunction
+        #self.costFunction = costFunction
 
         self.weights = []
         for i in range(1, self.num_layers):
@@ -48,8 +48,7 @@ class NeuralNetwork(object):
         deltas = np.empty(self.num_layers - 1, dtype=object)
 
         # last layer delta
-        deltas[-1] = np.multiply(self.costFunction(y, yHat, derivative=True),
-                                 self.activationFunction(zs[-1], derivative=True))
+        deltas[-1] = np.multiply(-(y - yHat), self.activationFunction(zs[-1], derivative=True))
 
         # all layers delta except last one
         for layer in range(self.num_hidden_layers - 1, -1, -1):
@@ -63,9 +62,9 @@ class NeuralNetwork(object):
 
 
 def squaredError(y, yHat, derivative=False):
-    if derivative:
-        return -(y - yHat)
-    else:
+    #if derivative:
+    #    return -(y - yHat)
+    #else:
         m = y.shape[0]
         J = 0.5 * sum((y - yHat) ** 2) / m
         return J
@@ -88,11 +87,17 @@ def tanh(z, derivative=False):
 
 class Trainer(object):
     def __init__(self, num_epochs):
-        np.random.seed(1)  # to reproductible
-        self.nn = NeuralNetwork([1, 3, 1], tanh, costFunction=squaredError)
+        np.random.seed(1)  # to be reproductible
+        self.nn = NeuralNetwork([1, 65, 65, 1], sigmoid)
 
-        X, y = SampleDataset().getSinDataset()
+        sineRange = 2*np.pi
+        X, y = SampleDataset().getSinDataset(sineRange)
         self.BatchGradientDescent(X, y, 10, num_epochs)
+
+        plt.scatter(X * sineRange / 0.0174533, y)
+
+        plt.scatter(X * sineRange / 0.0174533, self.nn.feedforward(X)[-1][-1], c='red')
+
 
     def SplitDataset(self):
         """
@@ -102,31 +107,34 @@ class Trainer(object):
         #TODO
 
 
-    def BatchGradientDescent(self, X, y, batch_size, num_epochs):
-        X = np.array_split(X, batch_size, axis=0)
-        y = np.array_split(y, batch_size, axis=0)
+    def BatchGradientDescent(self, X, y, batch_size, max_epochs, stop_when_error_less_than = 0.01):
+        numSplits = X.shape[0] / batch_size
+        X = np.array_split(X, numSplits, axis=0)
+        y = np.array_split(y, numSplits, axis=0)
 
         plotData = []
-        for i in range(1, num_epochs + 1):
+        for i in range(1, max_epochs + 1):
             index = np.random.randint(0, len(X))
-            self.nn.backprop(X[index], y[index], learningRate=0.2)
-            error = self.nn.costFunction(y[index], self.nn.feedforward(X[index])[-1][-1])
+            self.nn.backprop(X[index], y[index], learningRate=0.05)
+            error = squaredError(y[index], self.nn.feedforward(X[index])[-1][-1])
             print("{} : Error {}".format(i, error))
             plotData.append(error)
+            if(error < stop_when_error_less_than):
+                break
 
-        plt.plot(plotData)
+        #plt.plot(plotData)
 
-    def StochasticGradientDescent(self, X, y, num_epochs):
-        self.BatchGradientDescent(X, y, X.shape[0], num_epochs)
+    def StochasticGradientDescent(self, X, y, max_epochs):
+        self.BatchGradientDescent(X, y, X.shape[0], max_epochs)
 
     def normalize(self, a):
         maxValues = np.amax(a, axis=0)
         return a / maxValues
 
 class SampleDataset(object):
-    def getSinDataset(self):
-        X = np.random.randn(1000, 1)
-        y = np.sin(X * 180)
+    def getSinDataset(self, range=np.pi):
+        X = np.random.rand(1000, 1)
+        y = np.sin(X * range)
         return X, y
 
     def getXORDataset(self):
@@ -135,4 +143,4 @@ class SampleDataset(object):
 
         return X, y
 
-trainer = Trainer(1000)
+trainer = Trainer(10000)
