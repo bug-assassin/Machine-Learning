@@ -71,32 +71,33 @@ def squaredError(y, yHat, derivative=False):
 
 
 def sigmoid(z, derivative=False):
-    s = 1 / (1 + np.exp(-z))
+    y = 1 / (1 + np.exp(-z))
 
     if derivative:
-        return s * (1 - s)
-    return s
+        return y * (1 - y)
+    return y
 
 
 def tanh(z, derivative=False):
-    s = 2 / (1 + np.exp(-2 * z)) - 1
+    y = np.tanh(z)
 
     if derivative:
-        return 1 - s ** 2
-    return s
+        return 1.0 - (y**2)
+    return y
 
 class Trainer(object):
-    def __init__(self, num_epochs):
+    def __init__(self):
         np.random.seed(1)  # to be reproductible
-        self.nn = NeuralNetwork([1, 65, 65, 1], sigmoid)
+        self.nn = NeuralNetwork([1, 30, 30, 20, 1], tanh)
 
         sineRange = 2*np.pi
-        X, y = SampleDataset().getSinDataset(sineRange)
-        self.BatchGradientDescent(X, y, 10, num_epochs)
+        sineMin = 0
+        X, y = SampleDataset().getSinDataset(min=sineMin, sineRange=sineRange)
+        self.BatchGradientDescent(X, y, batch_size=5, max_epochs=10000, stop_when_error_less_than=0.00001)
 
-        plt.scatter(X * sineRange / 0.0174533, y)
+        plt.scatter((X * sineRange + sineMin) / 0.0174533, y)
 
-        plt.scatter(X * sineRange / 0.0174533, self.nn.feedforward(X)[-1][-1], c='red')
+        plt.scatter((X * sineRange + sineMin) / 0.0174533, self.nn.feedforward(X)[-1][-1], c='red')
 
 
     def SplitDataset(self):
@@ -107,7 +108,7 @@ class Trainer(object):
         #TODO
 
 
-    def BatchGradientDescent(self, X, y, batch_size, max_epochs, stop_when_error_less_than = 0.01):
+    def BatchGradientDescent(self, X, y, batch_size, max_epochs, stop_when_error_less_than = 0.001):
         numSplits = X.shape[0] / batch_size
         X = np.array_split(X, numSplits, axis=0)
         y = np.array_split(y, numSplits, axis=0)
@@ -115,7 +116,7 @@ class Trainer(object):
         plotData = []
         for i in range(1, max_epochs + 1):
             index = np.random.randint(0, len(X))
-            self.nn.backprop(X[index], y[index], learningRate=0.05)
+            self.nn.backprop(X[index], y[index], learningRate=0.03)
             error = squaredError(y[index], self.nn.feedforward(X[index])[-1][-1])
             print("{} : Error {}".format(i, error))
             plotData.append(error)
@@ -124,17 +125,17 @@ class Trainer(object):
 
         #plt.plot(plotData)
 
-    def StochasticGradientDescent(self, X, y, max_epochs):
-        self.BatchGradientDescent(X, y, X.shape[0], max_epochs)
+    def StochasticGradientDescent(self, X, y, max_epochs, stop_when_error_less_than = 0.001):
+        self.BatchGradientDescent(X, y, X.shape[0], max_epochs, stop_when_error_less_than)
 
     def normalize(self, a):
         maxValues = np.amax(a, axis=0)
         return a / maxValues
 
 class SampleDataset(object):
-    def getSinDataset(self, range=np.pi):
+    def getSinDataset(self, min = 0, sineRange = np.pi):
         X = np.random.rand(1000, 1)
-        y = np.sin(X * range)
+        y = np.sin(X * sineRange + min)
         return X, y
 
     def getXORDataset(self):
@@ -143,4 +144,4 @@ class SampleDataset(object):
 
         return X, y
 
-trainer = Trainer(10000)
+trainer = Trainer()
