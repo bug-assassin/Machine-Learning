@@ -66,7 +66,8 @@ def squaredError(y, yHat, derivative=False):
         return -(y - yHat)
     else:
         m = y.shape[0]
-        J = 0.5 * sum((y - yHat) ** 2) / m
+        n = y.shape[-1]
+        J = 0.5 * sum((sum((y - yHat)) / n) ** 2) / m
         return J
 
 
