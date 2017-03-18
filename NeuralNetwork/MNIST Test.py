@@ -1,5 +1,6 @@
 from mnist import MNIST
 from NeuralNetwork import *
+import matplotlib.pyplot as plt
 
 mndata = MNIST("C:\\Users\\Work\\Documents\\GitHub\\NeuralNetworkBackprop\\mnist_dataset\\")
 dataset_training = np.array(mndata.load_training())
@@ -21,7 +22,7 @@ for i in range(m):
 
 nn = NeuralNetwork([784, 300, 10], sigmoid, squaredError)
 trainer = Trainer(nn)
-trainer.BatchGradientDescent(X, y, batch_size=20, max_epochs=100000, stop_when_error_less_than=0)
+trainer.BatchGradientDescent(X, y, batch_size=20, max_epochs=500, stop_when_error_less_than=0)
 
 images = []
 
@@ -36,6 +37,7 @@ for i in range(0, 10):
 def testImage(image):
     image = image / 255
     plt.imshow(image, cmap=plt.cm.Greys)
+    # noinspection PyTypeChecker
     answer = nn.feedforward(np.reshape(image, 784))[-1][-1]
     print(answer, "\n")
     print("Answer: ", answer.argmax(axis=0))

@@ -1,5 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
 
 class NeuralNetwork(object):
     def __init__(self, sizes, activationFunction, costFunction):

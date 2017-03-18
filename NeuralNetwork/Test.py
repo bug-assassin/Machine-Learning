@@ -1,5 +1,6 @@
 from NeuralNetwork import *
 import numpy as np
+import matplotlib.pyplot as plt
 
 class SampleDataset(object):
     def getSinDataset(self, min = 0, sineRange = np.pi):
